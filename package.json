@@ -1,0 +1,36 @@
+{
+  "name": "mernboot-app",
+  "version": "1.0.0",
+  "description": "A MERNBoot generated application with MVC structure.",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node ./index.js",
+    "dev": "nodemon --watch src --exec node index.js",
+    "dev:server": "nodemon server.js",
+    "dev:client": "cd client && npm run dev",
+    "dev:all": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "setup": "mernfinity"
+  },
+  "author": "Generated with MERNBoot",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mernfinity": "^2.0.8",
+    "mongoose": "^7.4.1",
+    "morgan": "^1.10.0",
+    "uuid": "^13.0.0",
+    "ws": "^8.18.3",
+    "y-leveldb": "^0.2.0",
+    "y-websocket": "^3.0.0",
+    "yjs": "^13.6.27"
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.1",
+    "nodemon": "^3.0.0"
+  }
+}
