@@ -45,26 +45,9 @@ const Editor = () => {
     title: "Untitled Document",
     content: "",
     lastModified: new Date(),
-    collaborators: [
-      {
-        id: 1,
-        name: "Alex Chen",
-        avatar: "/api/placeholder/32/32",
-        color: "#a855f7",
-        cursor: { x: 100, y: 200 },
-        selection: null,
-        isTyping: false,
-      },
-      {
-        id: 2,
-        name: "Sarah Kim",
-        avatar: "/api/placeholder/32/32",
-        color: "#14b8a6",
-        cursor: { x: 300, y: 150 },
-        selection: { start: 45, end: 67 },
-        isTyping: true,
-      },
-    ],
+    owner: null,
+    permissions: [],
+    collaborators: [], // Will be populated from owner + permissions
   });
 
   // Enhanced user object for collaborative editor
@@ -72,6 +55,66 @@ const Editor = () => {
     ...user,
     color: user?.color || "#8B5CF6",
     name: user?.name || "Anonymous",
+  };
+
+  // Generate avatar for users without profile pictures
+  const generateAvatar = (name, userId) => {
+    const colors = ["#a855f7", "#14b8a6", "#f97316", "#ec4899", "#06b6d4"];
+    const colorIndex = userId
+      ? parseInt(userId.slice(-1), 16) % colors.length
+      : 0;
+    return {
+      color: colors[colorIndex],
+      initials: name ? name.charAt(0).toUpperCase() : "U",
+    };
+  };
+
+  // Convert backend data to collaborator format
+  const formatCollaborators = (docData) => {
+    const collaborators = [];
+
+    // Add owner as first collaborator
+    if (docData.owner) {
+      const avatar = generateAvatar(docData.owner.name, docData.owner._id);
+      collaborators.push({
+        id: docData.owner._id,
+        name: docData.owner.name || docData.owner.username || "Owner",
+        email: docData.owner.email,
+        avatar: docData.owner.avatar || avatar.initials,
+        color: avatar.color,
+        role: "owner",
+        isActive: false, // Will be updated by WebSocket
+        cursor: null,
+        selection: null,
+        isTyping: false,
+      });
+    }
+
+    // Add users with permissions
+    if (docData.permissions && docData.permissions.length > 0) {
+      docData.permissions.forEach((permission) => {
+        if (permission.user) {
+          const avatar = generateAvatar(
+            permission.user.name,
+            permission.user._id
+          );
+          collaborators.push({
+            id: permission.user._id,
+            name: permission.user.name || permission.user.username || "User",
+            email: permission.user.email,
+            avatar: permission.user.avatar || avatar.initials,
+            color: avatar.color,
+            role: permission.permission, // 'view' or 'edit'
+            isActive: false, // Will be updated by WebSocket
+            cursor: null,
+            selection: null,
+            isTyping: false,
+          });
+        }
+      });
+    }
+
+    return collaborators;
   };
 
   // Get auth token
@@ -86,12 +129,17 @@ const Editor = () => {
           const result = await documentAPI.getDocumentById(docId);
           if (result.success) {
             console.log("Document loaded successfully:", result.data);
+            const collaborators = formatCollaborators(result.data);
+
             setDocument((prev) => ({
               ...prev,
               id: result.data._id || result.data.id || docId,
               title: result.data.title,
               content: result.data.content,
               lastModified: new Date(result.data.updatedAt),
+              owner: result.data.owner,
+              permissions: result.data.permissions || [],
+              collaborators: collaborators,
             }));
           } else {
             console.error("Failed to load document:", result.error);
@@ -338,39 +386,84 @@ const Editor = () => {
                 >
                   <div className="flex items-center space-x-3">
                     <span className="text-sm text-gray-400">
-                      Collaborating with:
+                      {document.collaborators.length > 1
+                        ? "Collaborating with:"
+                        : "Document"}
                     </span>
-                    <div className="flex items-center space-x-2">
-                      {document.collaborators.map((collaborator) => (
-                        <motion.div
-                          key={collaborator.id}
-                          whileHover={{ scale: 1.1 }}
-                          className="relative"
-                        >
-                          <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold text-white border-2"
-                            style={{
-                              backgroundColor: collaborator.color,
-                              borderColor: collaborator.isTyping
-                                ? collaborator.color
-                                : "transparent",
-                            }}
+                    {document.collaborators.length > 0 ? (
+                      <div className="flex items-center space-x-2">
+                        {document.collaborators.map((collaborator) => (
+                          <motion.div
+                            key={collaborator.id}
+                            whileHover={{ scale: 1.1 }}
+                            className="relative group"
                           >
-                            {collaborator.name.charAt(0)}
-                          </div>
-                          {collaborator.isTyping && (
-                            <motion.div
-                              animate={{ scale: [1, 1.2, 1] }}
-                              transition={{
-                                duration: 1,
-                                repeat: Number.POSITIVE_INFINITY,
+                            <div
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold text-white border-2 relative overflow-hidden"
+                              style={{
+                                backgroundColor: collaborator.color,
+                                borderColor: collaborator.isTyping
+                                  ? collaborator.color
+                                  : "transparent",
                               }}
-                              className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full"
+                            >
+                              {/* Always show the first letter as fallback */}
+                              <div className="w-full h-full flex items-center justify-center text-white font-bold">
+                                {collaborator.name.charAt(0).toUpperCase()}
+                              </div>
+
+                              {/* Only show image if it's a valid URL (length > 10) */}
+                              {collaborator.avatar &&
+                                collaborator.avatar.length > 10 && (
+                                  <img
+                                    src={collaborator.avatar}
+                                    alt={collaborator.name}
+                                    className="absolute inset-0 w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.target.style.display = "none";
+                                    }}
+                                  />
+                                )}
+                            </div>
+
+                            {/* Role indicator */}
+                            <div
+                              className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border border-white ${
+                                collaborator.role === "owner"
+                                  ? "bg-yellow-400"
+                                  : collaborator.role === "edit"
+                                  ? "bg-green-400"
+                                  : "bg-blue-400"
+                              }`}
                             />
-                          )}
-                        </motion.div>
-                      ))}
-                    </div>
+
+                            {collaborator.isTyping && (
+                              <motion.div
+                                animate={{ scale: [1, 1.2, 1] }}
+                                transition={{
+                                  duration: 1,
+                                  repeat: Number.POSITIVE_INFINITY,
+                                }}
+                                className="absolute -bottom-1 -left-1 w-3 h-3 bg-green-400 rounded-full"
+                              />
+                            )}
+
+                            {/* Tooltip */}
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                              {collaborator.name}
+                              <br />
+                              <span className="text-gray-300 capitalize">
+                                {collaborator.role}
+                              </span>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-gray-500">
+                        No collaborators
+                      </span>
+                    )}
                   </div>
 
                   <div className="flex items-center space-x-4 text-sm text-gray-400">

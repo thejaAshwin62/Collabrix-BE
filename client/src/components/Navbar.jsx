@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -16,29 +16,63 @@ import {
   LogOut,
   Bell,
   Search,
+  Settings,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const userDropdownRef = useRef(null);
+  const notificationsRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout, isAuthenticated } = useAuth();
 
   const navItems = [
     { path: "/dashboard", icon: Home, label: "Dashboard" },
-    { path: "/editor", icon: FileText, label: "Editor" },
     { path: "/join", icon: Search, label: "Join" },
     { path: "/shared", icon: Share2, label: "Shared" },
-    { path: "/teams", icon: Users, label: "Teams" },
     { path: "/activity", icon: Activity, label: "Activity" },
     { path: "/ai", icon: Bot, label: "AI Assistant" },
   ];
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        userDropdownRef.current &&
+        !userDropdownRef.current.contains(event.target)
+      ) {
+        setShowUserDropdown(false);
+      }
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target)
+      ) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/");
+      setShowUserDropdown(false);
+    } catch (error) {
+      console.error("Logout error:", error);
+      // Still navigate to login page even if logout fails
+      navigate("/");
+      setShowUserDropdown(false);
+    }
   };
 
   if (!isAuthenticated) return null;
@@ -93,13 +127,13 @@ const Navbar = () => {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="p-2 rounded-xl glass hover:bg-white/10 transition-all duration-300"
+                className="p-2 rounded-xl glass hover:bg-white/10 transition-all duration-300 hover:shadow-lg hover:shadow-neon-purple/20"
               >
-                <Search className="w-5 h-5 text-gray-300" />
+                <Search className="w-5 h-5 text-gray-300 hover:text-neon-purple transition-colors duration-300" />
               </motion.button>
 
               {/* Notifications */}
-              <div className="relative">
+              <div className="relative" ref={notificationsRef}>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -116,13 +150,13 @@ const Navbar = () => {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
-                      className="absolute right-0 mt-2 w-80 glass-strong rounded-2xl border border-white/20 p-4"
+                      className="absolute right-0 mt-2 w-80 bg-gray-900/95 backdrop-blur-xl rounded-2xl border border-white/20 p-4 shadow-2xl shadow-black/50 ring-1 ring-neon-purple/10"
                     >
-                      <h3 className="text-lg font-semibold mb-3">
+                      <h3 className="text-lg font-semibold mb-3 text-white">
                         Notifications
                       </h3>
                       <div className="space-y-3">
-                        <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                        <div className="p-3 rounded-xl bg-white/10 border border-white/10">
                           <p className="text-sm text-gray-300">
                             New collaboration request from Alex
                           </p>
@@ -130,7 +164,7 @@ const Navbar = () => {
                             2 minutes ago
                           </p>
                         </div>
-                        <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                        <div className="p-3 rounded-xl bg-white/10 border border-white/10">
                           <p className="text-sm text-gray-300">
                             Document "Project Plan" was updated
                           </p>
@@ -145,21 +179,100 @@ const Navbar = () => {
               </div>
 
               {/* User Menu */}
-              <div className="relative">
+              <div className="relative" ref={userDropdownRef}>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowUserDropdown(!showUserDropdown)}
                   className="flex items-center space-x-2 p-2 rounded-xl glass hover:bg-white/10 transition-all duration-300"
                 >
                   <div className="w-8 h-8 rounded-full bg-gradient-to-r from-neon-purple to-neon-teal flex items-center justify-center">
                     <span className="text-sm font-semibold text-white">
-                      {user?.name?.charAt(0).toUpperCase()}
+                      {user?.name?.charAt(0).toUpperCase() || "U"}
                     </span>
                   </div>
-                  <span className="hidden sm:block text-sm font-medium text-white">
-                    {user?.name}
-                  </span>
+                  <div className="hidden sm:flex items-center space-x-1">
+                    <span className="text-sm font-medium text-white">
+                      {user?.name || "User"}
+                    </span>
+                    <ChevronDown
+                      className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                        showUserDropdown ? "rotate-180" : ""
+                      }`}
+                    />
+                  </div>
                 </motion.button>
+
+                {/* User Dropdown */}
+                <AnimatePresence>
+                  {showUserDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute right-0 mt-2 w-64 bg-gray-900/95 backdrop-blur-xl rounded-2xl border border-white/20 p-2 shadow-2xl shadow-black/50 ring-1 ring-neon-purple/10"
+                    >
+                      {/* User Info */}
+                      <div className="p-3 border-b border-white/10">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-r from-neon-purple to-neon-teal flex items-center justify-center">
+                            <span className="text-lg font-bold text-white">
+                              {user?.name?.charAt(0).toUpperCase() || "U"}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-white">
+                              {user?.name || "User"}
+                            </p>
+                            <p className="text-sm text-gray-400">
+                              {user?.email || "user@example.com"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Menu Items */}
+                      <div className="py-2">
+                        <Link
+                          to="/profile"
+                          onClick={() => setShowUserDropdown(false)}
+                        >
+                          <motion.div
+                            whileHover={{ x: 4 }}
+                            className="flex items-center space-x-3 p-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                          >
+                            <User className="w-5 h-5" />
+                            <span className="font-medium">Profile</span>
+                          </motion.div>
+                        </Link>
+
+                        <Link
+                          to="/settings"
+                          onClick={() => setShowUserDropdown(false)}
+                        >
+                          <motion.div
+                            whileHover={{ x: 4 }}
+                            className="flex items-center space-x-3 p-3 rounded-xl text-gray-300 hover:text-white hover:bg-white/10 transition-all duration-200"
+                          >
+                            <Settings className="w-5 h-5" />
+                            <span className="font-medium">Settings</span>
+                          </motion.div>
+                        </Link>
+
+                        <div className="border-t border-white/10 my-2"></div>
+
+                        <motion.button
+                          whileHover={{ x: 4 }}
+                          onClick={handleLogout}
+                          className="flex items-center space-x-3 p-3 rounded-xl text-gray-300 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 w-full"
+                        >
+                          <LogOut className="w-5 h-5" />
+                          <span className="font-medium">Logout</span>
+                        </motion.button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Mobile Menu Button */}
@@ -193,12 +306,12 @@ const Navbar = () => {
               className="fixed inset-0 bg-black/50 backdrop-blur-sm"
               onClick={() => setIsOpen(false)}
             />
-            <motion.div className="fixed right-0 top-0 h-full w-80 glass-strong border-l border-white/20 p-6">
+            <motion.div className="fixed right-0 top-0 h-full w-80 bg-gray-900/95 backdrop-blur-xl border-l border-white/20 p-6 shadow-2xl">
               <div className="flex items-center justify-between mb-8">
                 <span className="text-xl font-bold text-gradient">Menu</span>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-2 rounded-xl hover:bg-white/10"
+                  className="p-2 rounded-xl hover:bg-white/10 text-white"
                 >
                   <X className="w-5 h-5" />
                 </button>

@@ -258,4 +258,41 @@ export const documentAPI = {
       };
     }
   },
+
+  // Profile related endpoints
+  getUserProfile: async () => {
+    try {
+      const response = await customFetch.get("/auth/profile");
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to get user profile",
+      };
+    }
+  },
+
+  updateUserProfile: async (profileData) => {
+    try {
+      const response = await customFetch.put("/auth/profile", profileData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to update profile",
+      };
+    }
+  },
+
+  getUserStats: async () => {
+    try {
+      const response = await customFetch.get("/auth/profile/stats");
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to get user stats",
+      };
+    }
+  },
 };

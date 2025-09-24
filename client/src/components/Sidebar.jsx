@@ -20,11 +20,13 @@ import {
   Shield,
 } from "lucide-react";
 import { documentAPI } from "../utils/documentAPI";
+import CreateDocumentModal from "./CreateDocumentModal";
 
 const Sidebar = ({ refreshTrigger = 0 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [recentDocs, setRecentDocs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const location = useLocation();
 
   const navItems = [
@@ -65,6 +67,33 @@ const Sidebar = ({ refreshTrigger = 0 }) => {
     fetchRecentDocuments();
   }, [refreshTrigger]); // Re-fetch when refreshTrigger changes
 
+  // Handle document creation
+  const handleDocumentCreated = () => {
+    setShowCreateModal(false);
+    // Refresh the recent documents list
+    const fetchRecentDocuments = async () => {
+      try {
+        const result = await documentAPI.getDocuments();
+        if (result.success) {
+          const sortedDocs = result.data
+            .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+            .slice(0, 5)
+            .map((doc) => ({
+              id: doc._id,
+              title: doc.title,
+              type: "document",
+              starred: false,
+              updatedAt: doc.updatedAt,
+            }));
+          setRecentDocs(sortedDocs);
+        }
+      } catch (error) {
+        console.error("Failed to refresh recent documents:", error);
+      }
+    };
+    fetchRecentDocuments();
+  };
+
   return (
     <motion.aside
       initial={{ x: -300 }}
@@ -89,23 +118,71 @@ const Sidebar = ({ refreshTrigger = 0 }) => {
 
         {/* Create New Button */}
         <motion.button
-          whileHover={{ scale: 1.02 }}
+          whileHover={{
+            scale: 1.02,
+            boxShadow: "0 0 30px rgba(139, 92, 246, 0.4)",
+          }}
           whileTap={{ scale: 0.98 }}
-          className="btn-primary mb-6 flex items-center justify-center space-x-2"
+          onClick={() => setShowCreateModal(true)}
+          className={`
+            relative overflow-hidden rounded-2xl p-4 mb-6 
+            bg-gradient-to-r from-neon-purple via-neon-purple/90 to-neon-teal
+            border border-neon-purple/30 backdrop-blur-sm
+            text-white font-semibold transition-all duration-300
+            hover:from-neon-purple/90 hover:to-neon-teal/90
+            shadow-lg shadow-neon-purple/25 hover:shadow-xl hover:shadow-neon-purple/40
+            flex items-center justify-center space-x-2
+            group focus:outline-none focus:ring-2 focus:ring-neon-purple/50
+            ${isCollapsed ? "w-12 h-12" : "w-full"}
+          `}
         >
-          <Plus className="w-5 h-5" />
-          <AnimatePresence>
-            {!isCollapsed && (
-              <motion.span
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                className="font-semibold"
-              >
-                New Document
-              </motion.span>
-            )}
-          </AnimatePresence>
+          {/* Animated background glow */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0"
+            initial={{ x: "-100%" }}
+            animate={{ x: "100%" }}
+            transition={{
+              repeat: Infinity,
+              duration: 2.5,
+              repeatDelay: 2,
+              ease: "linear",
+            }}
+          />
+
+          <motion.div
+            className="flex items-center space-x-2 relative z-10"
+            animate={isCollapsed ? {} : { x: [0, 2, 0] }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+          >
+            <Plus className="w-5 h-5 group-hover:rotate-180 transition-transform duration-300" />
+            <AnimatePresence>
+              {!isCollapsed && (
+                <motion.span
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: "auto" }}
+                  exit={{ opacity: 0, width: 0 }}
+                  className="font-semibold text-sm tracking-wide whitespace-nowrap"
+                >
+                  New Document
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </motion.div>
+
+          {/* Ripple effect on hover */}
+          <motion.div
+            className="absolute inset-0 rounded-2xl"
+            initial={{ scale: 0, opacity: 0.5 }}
+            whileHover={{
+              scale: 1.1,
+              opacity: 0,
+              transition: { duration: 0.6 },
+            }}
+            style={{
+              background:
+                "radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%)",
+            }}
+          />
         </motion.button>
 
         {/* Navigation */}
@@ -218,6 +295,13 @@ const Sidebar = ({ refreshTrigger = 0 }) => {
           </motion.div>
         </Link>
       </div>
+
+      {/* Create Document Modal */}
+      <CreateDocumentModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onDocumentCreated={handleDocumentCreated}
+      />
     </motion.aside>
   );
 };

@@ -86,3 +86,183 @@ export const testAuth = async (req, res) => {
     res.status(500).json({ error: "Server error in test auth" });
   }
 };
+
+export const GetUserProfile = async (req, res) => {
+  try {
+    const user = await UserModel.findById(req.user.userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Calculate user stats
+    const DocsModel = (await import("../models/DocsModel.js")).default;
+
+    const documentsCreated = await DocsModel.countDocuments({
+      owner: req.user.userId,
+    });
+
+    // Count collaborations (documents where user has permissions but is not owner)
+    const collaborations = await DocsModel.countDocuments({
+      "permissions.user": req.user.userId,
+      owner: { $ne: req.user.userId },
+    });
+
+    // Calculate hours active (mock calculation based on document activity)
+    const userDocs = await DocsModel.find({ owner: req.user.userId });
+    const hoursActive = Math.round(userDocs.length * 2.5); // Mock calculation
+
+    // Achievement score based on activity
+    const achievementScore =
+      documentsCreated * 25 + collaborations * 15 + hoursActive * 5;
+
+    const profileData = {
+      ...user.toObject(),
+      stats: {
+        documentsCreated,
+        collaborations,
+        hoursActive,
+        achievementScore,
+      },
+      joinDate: user.createdAt,
+    };
+
+    res.status(200).json(profileData);
+  } catch (error) {
+    console.error("Error fetching user profile:", error);
+    res.status(500).json({ error: "Server error", details: error.message });
+  }
+};
+
+export const UpdateUserProfile = async (req, res) => {
+  try {
+    const { name, phone, location, bio, website, company, role, preferences } =
+      req.body;
+
+    const updateData = {};
+
+    // Update basic profile fields
+    if (name !== undefined) updateData.name = name;
+    if (phone !== undefined) updateData.phone = phone;
+    if (location !== undefined) updateData.location = location;
+    if (bio !== undefined) updateData.bio = bio;
+    if (website !== undefined) updateData.website = website;
+    if (company !== undefined) updateData.company = company;
+    if (role !== undefined) updateData.role = role;
+
+    // Update preferences if provided
+    if (preferences) {
+      updateData.preferences = { ...preferences };
+    }
+
+    const user = await UserModel.findByIdAndUpdate(
+      req.user.userId,
+      updateData,
+      { new: true, runValidators: true }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    res.status(500).json({ error: "Server error", details: error.message });
+  }
+};
+
+export const GetUserStats = async (req, res) => {
+  try {
+    const DocsModel = (await import("../models/DocsModel.js")).default;
+
+    // Get total documents created by user
+    const totalDocuments = await DocsModel.countDocuments({
+      owner: req.user.userId,
+    });
+
+    // Get total collaborations (documents where user has permissions but is not owner)
+    const totalCollaborations = await DocsModel.countDocuments({
+      "permissions.user": req.user.userId,
+      owner: { $ne: req.user.userId },
+    });
+
+    // Get documents created this month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const documentsThisMonth = await DocsModel.countDocuments({
+      owner: req.user.userId,
+      createdAt: { $gte: startOfMonth },
+    });
+
+    // Get collaborations this month
+    const collaborationsThisMonth = await DocsModel.countDocuments({
+      "permissions.user": req.user.userId,
+      owner: { $ne: req.user.userId },
+      createdAt: { $gte: startOfMonth },
+    });
+
+    // Get this week's activity
+    const startOfWeek = new Date();
+    startOfWeek.setDate(startOfWeek.getDate() - 7);
+
+    const activityThisWeek = await DocsModel.countDocuments({
+      $or: [
+        { owner: req.user.userId },
+        { "permissions.user": req.user.userId },
+      ],
+      updatedAt: { $gte: startOfWeek },
+    });
+
+    // Calculate hours active based on document activity and collaborations
+    const hoursActiveThisWeek = Math.round(
+      activityThisWeek * 1.5 + totalCollaborations * 0.5
+    );
+
+    // Calculate achievement score based on all activity
+    const achievementScore =
+      totalDocuments * 25 + totalCollaborations * 15 + hoursActiveThisWeek * 5;
+
+    // Calculate score gained this month
+    const scoreThisMonth =
+      documentsThisMonth * 25 + collaborationsThisMonth * 15;
+
+    const stats = {
+      totalDocuments,
+      documentsThisMonth,
+      totalCollaborations,
+      collaborationsThisMonth,
+      hoursActiveThisWeek,
+      achievementScore,
+      scoreThisMonth,
+    };
+
+    res.status(200).json(stats);
+  } catch (error) {
+    console.error("Error fetching user stats:", error);
+    res.status(500).json({ error: "Server error", details: error.message });
+  }
+};
+
+export const Logout = async (req, res) => {
+  try {
+    // Since we're using stateless JWT tokens, logout is primarily a client-side operation
+    // But we can perform server-side cleanup if needed
+
+    // Log the logout activity
+    console.log(
+      `User ${req.user.userId} logged out at ${new Date().toISOString()}`
+    );
+
+    // You could implement token blacklisting here if needed
+    // For now, we'll just return a success response
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.error("Error during logout:", error);
+    res.status(500).json({ error: "Server error during logout" });
+  }
+};

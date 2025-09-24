@@ -100,13 +100,31 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem("authToken");
-    localStorage.removeItem("userData");
-    setUser(null);
-    setIsAuthenticated(false);
-    // Remove auth header
-    delete customFetch.defaults.headers.common["Authorization"];
+  const logout = async () => {
+    try {
+      // Call the backend logout endpoint
+      await customFetch.post("/auth/logout");
+
+      // Clear local storage and state
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userData");
+      setUser(null);
+      setIsAuthenticated(false);
+      // Remove auth header
+      delete customFetch.defaults.headers.common["Authorization"];
+
+      return { success: true };
+    } catch (error) {
+      // Even if the API call fails, still logout locally
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("userData");
+      setUser(null);
+      setIsAuthenticated(false);
+      delete customFetch.defaults.headers.common["Authorization"];
+
+      console.error("Logout API error:", error);
+      return { success: true }; // Still return success for user experience
+    }
   };
 
   const value = {

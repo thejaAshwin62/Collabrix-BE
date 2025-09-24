@@ -24,6 +24,10 @@
     @apply bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl;
   }
 
+  .glass-strong {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/50;
+  }
+
   .neon-glow {
     @apply shadow-lg shadow-purple-500/25;
   }
@@ -32,8 +36,48 @@
     @apply bg-gradient-to-r from-purple-500 via-teal-500 to-orange-500 bg-clip-text text-transparent;
   }
 
+  .text-gradient {
+    @apply bg-gradient-to-r from-neon-purple via-neon-teal to-neon-orange bg-clip-text text-transparent;
+  }
+
   .floating-card {
     @apply transform transition-all duration-300 hover:scale-105 hover:-translate-y-2;
+  }
+
+  /* Enhanced form input styling */
+  .form-input-glow {
+    @apply shadow-lg shadow-neon-purple/10 focus:shadow-neon-purple/30;
+  }
+
+  /* Button styles matching neon color palette */
+  .btn-primary {
+    @apply bg-gradient-to-r from-neon-purple to-neon-teal text-white font-semibold;
+    @apply hover:from-neon-purple/90 hover:to-neon-teal/90 hover:shadow-lg hover:shadow-neon-purple/25;
+    @apply transition-all duration-300 transform hover:scale-105;
+    @apply border border-neon-purple/30 backdrop-blur-sm;
+  }
+
+  .btn-secondary {
+    @apply bg-white/10 text-white font-semibold border border-white/30;
+    @apply hover:bg-white/20 hover:border-white/50 hover:shadow-lg hover:shadow-white/10;
+    @apply transition-all duration-300 transform hover:scale-105;
+    @apply backdrop-blur-sm;
+  }
+
+  /* Input field styles matching neon color palette */
+  .input-field {
+    @apply bg-white/5 backdrop-blur-md border border-white/20 rounded-2xl px-4 py-3;
+    @apply text-white placeholder-gray-400 outline-none transition-all duration-300;
+    @apply focus:bg-white/10 focus:border-neon-purple/50 focus:shadow-lg focus:shadow-neon-purple/20;
+    @apply hover:bg-white/10 hover:border-white/30;
+  }
+
+  /* Search input with icon styling */
+  .search-input {
+    @apply bg-white/5 backdrop-blur-md border border-white/20 rounded-2xl;
+    @apply text-white placeholder-gray-400 outline-none transition-all duration-300;
+    @apply focus:bg-neon-purple/10 focus:border-neon-purple/50 focus:shadow-lg focus:shadow-neon-purple/20;
+    @apply hover:bg-white/10 hover:border-neon-purple/30;
   }
 }
 

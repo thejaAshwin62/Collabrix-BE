@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
   Plus,
@@ -14,15 +14,15 @@ import {
   MoreVertical,
   FileText,
   Activity,
-} from "lucide-react"
-import Layout from "../components/Layout"
-import AnimatedButton from "../components/AnimatedButton"
+} from "lucide-react";
+import Layout from "../components/Layout";
+import AnimatedButton from "../components/AnimatedButton";
 
 const Teams = () => {
-  const [activeTab, setActiveTab] = useState("teams")
-  const [searchTerm, setSearchTerm] = useState("")
-  const [showCreateTeam, setShowCreateTeam] = useState(false)
-  const [selectedTeam, setSelectedTeam] = useState(null)
+  const [activeTab, setActiveTab] = useState("teams");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showCreateTeam, setShowCreateTeam] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState(null);
 
   const teams = [
     {
@@ -58,7 +58,7 @@ const Teams = () => {
       activity: "Active 1d ago",
       color: "from-orange-500 to-red-500",
     },
-  ]
+  ];
 
   const members = [
     {
@@ -91,7 +91,7 @@ const Teams = () => {
       joinDate: "2024-02-15",
       documents: 15,
     },
-  ]
+  ];
 
   const invitations = [
     {
@@ -110,16 +110,22 @@ const Teams = () => {
       sentDate: "2024-03-08",
       status: "expired",
     },
-  ]
+  ];
 
   return (
     <Layout>
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
             <h1 className="text-4xl font-bold text-white mb-2">Teams</h1>
-            <p className="text-gray-300">Manage your teams and collaborate with members</p>
+            <p className="text-gray-300">
+              Manage your teams and collaborate with members
+            </p>
           </motion.div>
 
           {/* Tabs */}
@@ -152,18 +158,22 @@ const Teams = () => {
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-4">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5 transition-colors duration-300 peer-focus:text-neon-purple" />
                       <input
                         type="text"
                         placeholder="Search teams..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 pr-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        className="search-input pl-12 pr-4 py-3 peer"
                       />
                     </div>
-                    <button className="p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-gray-300 hover:text-white hover:bg-white/20 transition-all duration-300">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="p-3 glass hover:bg-white/10 rounded-xl text-gray-300 hover:text-neon-purple hover:shadow-lg hover:shadow-neon-purple/20 transition-all duration-300"
+                    >
                       <Filter className="w-5 h-5" />
-                    </button>
+                    </motion.button>
                   </div>
                   <AnimatedButton
                     onClick={() => setShowCreateTeam(true)}
@@ -192,16 +202,24 @@ const Teams = () => {
                           {team.avatar}
                         </div>
                         <div className="flex items-center space-x-2">
-                          {team.role === "owner" && <Crown className="w-4 h-4 text-yellow-400" />}
-                          {team.role === "admin" && <Shield className="w-4 h-4 text-blue-400" />}
+                          {team.role === "owner" && (
+                            <Crown className="w-4 h-4 text-yellow-400" />
+                          )}
+                          {team.role === "admin" && (
+                            <Shield className="w-4 h-4 text-blue-400" />
+                          )}
                           <button className="p-1 hover:bg-white/20 rounded-lg transition-colors">
                             <MoreVertical className="w-4 h-4 text-gray-400" />
                           </button>
                         </div>
                       </div>
 
-                      <h3 className="text-xl font-semibold text-white mb-2">{team.name}</h3>
-                      <p className="text-gray-300 text-sm mb-4 line-clamp-2">{team.description}</p>
+                      <h3 className="text-xl font-semibold text-white mb-2">
+                        {team.name}
+                      </h3>
+                      <p className="text-gray-300 text-sm mb-4 line-clamp-2">
+                        {team.description}
+                      </p>
 
                       <div className="flex items-center justify-between text-sm text-gray-400">
                         <div className="flex items-center space-x-4">
@@ -271,24 +289,34 @@ const Teams = () => {
                               member.status === "online"
                                 ? "bg-green-400"
                                 : member.status === "away"
-                                  ? "bg-yellow-400"
-                                  : "bg-gray-400"
+                                ? "bg-yellow-400"
+                                : "bg-gray-400"
                             }`}
                           />
                         </div>
                         <div>
-                          <h3 className="text-white font-semibold">{member.name}</h3>
-                          <p className="text-gray-400 text-sm">{member.email}</p>
+                          <h3 className="text-white font-semibold">
+                            {member.name}
+                          </h3>
+                          <p className="text-gray-400 text-sm">
+                            {member.email}
+                          </p>
                         </div>
                       </div>
 
                       <div className="flex items-center space-x-6">
                         <div className="text-right">
-                          <p className="text-white text-sm font-medium">{member.role}</p>
-                          <p className="text-gray-400 text-xs">Joined {member.joinDate}</p>
+                          <p className="text-white text-sm font-medium">
+                            {member.role}
+                          </p>
+                          <p className="text-gray-400 text-xs">
+                            Joined {member.joinDate}
+                          </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-white text-sm">{member.documents}</p>
+                          <p className="text-white text-sm">
+                            {member.documents}
+                          </p>
                           <p className="text-gray-400 text-xs">Documents</p>
                         </div>
                         <button className="p-2 hover:bg-white/20 rounded-lg transition-colors">
@@ -311,7 +339,9 @@ const Teams = () => {
               >
                 {/* Invitations Header */}
                 <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-semibold text-white">Pending Invitations</h2>
+                  <h2 className="text-2xl font-semibold text-white">
+                    Pending Invitations
+                  </h2>
                   <AnimatedButton className="bg-gradient-to-r from-orange-500 to-red-500">
                     <Mail className="w-5 h-5 mr-2" />
                     Send Invitation
@@ -333,15 +363,23 @@ const Teams = () => {
                           <Mail className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                          <h3 className="text-white font-semibold">{invitation.email}</h3>
-                          <p className="text-gray-400 text-sm">Invited by {invitation.sentBy}</p>
+                          <h3 className="text-white font-semibold">
+                            {invitation.email}
+                          </h3>
+                          <p className="text-gray-400 text-sm">
+                            Invited by {invitation.sentBy}
+                          </p>
                         </div>
                       </div>
 
                       <div className="flex items-center space-x-6">
                         <div className="text-right">
-                          <p className="text-white text-sm font-medium">{invitation.role}</p>
-                          <p className="text-gray-400 text-xs">Sent {invitation.sentDate}</p>
+                          <p className="text-white text-sm font-medium">
+                            {invitation.role}
+                          </p>
+                          <p className="text-gray-400 text-xs">
+                            Sent {invitation.sentDate}
+                          </p>
                         </div>
                         <div
                           className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -365,7 +403,7 @@ const Teams = () => {
         </div>
       </div>
     </Layout>
-  )
-}
+  );
+};
 
-export default Teams
+export default Teams;
