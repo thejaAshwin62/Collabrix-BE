@@ -180,7 +180,7 @@ const Register = () => {
       </div>
 
       <AuthCard
-        title="Join CollabDocs"
+        title="Join Collabrix"
         subtitle="Create your account and start collaborating"
       >
         <motion.form

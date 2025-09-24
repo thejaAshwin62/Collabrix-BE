@@ -1,92 +1,108 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Link, useNavigate } from "react-router-dom"
-import { motion } from "framer-motion"
-import { ArrowRight, FileText, Users, Zap, Shield, Sparkles, Play, Star } from "lucide-react"
-import AnimatedButton from "../components/AnimatedButton"
-import { useAuth } from "../context/AuthContext"
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  FileText,
+  Users,
+  Zap,
+  Shield,
+  Sparkles,
+  Play,
+  Star,
+} from "lucide-react";
+import AnimatedButton from "../components/AnimatedButton";
+import { useAuth } from "../context/AuthContext";
 
 const Landing = () => {
-  const [currentFeature, setCurrentFeature] = useState(0)
-  const [isTyping, setIsTyping] = useState(false)
-  const navigate = useNavigate()
-  const { isAuthenticated } = useAuth()
+  const [currentFeature, setCurrentFeature] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/dashboard")
+      navigate("/dashboard");
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, navigate]);
 
   const features = [
     {
       icon: FileText,
       title: "Real-time Collaboration",
-      description: "Edit documents together with your team in real-time, see changes instantly.",
+      description:
+        "Edit documents together with your team in real-time, see changes instantly.",
     },
     {
       icon: Users,
       title: "Team Workspaces",
-      description: "Organize your projects with dedicated team spaces and role-based access.",
+      description:
+        "Organize your projects with dedicated team spaces and role-based access.",
     },
     {
       icon: Zap,
       title: "AI-Powered Writing",
-      description: "Get intelligent suggestions and automated formatting with our AI assistant.",
+      description:
+        "Get intelligent suggestions and automated formatting with our AI assistant.",
     },
     {
       icon: Shield,
       title: "Enterprise Security",
-      description: "Bank-level encryption and compliance with industry security standards.",
+      description:
+        "Bank-level encryption and compliance with industry security standards.",
     },
-  ]
+  ];
 
   const testimonials = [
     {
       name: "Sarah Chen",
       role: "Product Manager",
       company: "TechCorp",
-      content: "CollabDocs transformed how our team collaborates. The real-time editing is seamless.",
+      content:
+        "Collabrix transformed how our team collaborates. The real-time editing is seamless.",
       rating: 5,
     },
     {
       name: "Marcus Johnson",
       role: "Engineering Lead",
       company: "StartupXYZ",
-      content: "The AI features save us hours of work. Best collaborative editor we've used.",
+      content:
+        "The AI features save us hours of work. Best collaborative editor we've used.",
       rating: 5,
     },
     {
       name: "Elena Rodriguez",
       role: "Design Director",
       company: "Creative Studio",
-      content: "Beautiful interface and powerful features. Our entire team loves using it.",
+      content:
+        "Beautiful interface and powerful features. Our entire team loves using it.",
       rating: 5,
     },
-  ]
+  ];
 
   // Simulate typing effect for demo
-  const demoText = "Experience the future of collaborative editing..."
-  const [displayText, setDisplayText] = useState("")
+  const demoText = "Experience the future of collaborative editing...";
+  const [displayText, setDisplayText] = useState("");
 
   useEffect(() => {
-    let index = 0
+    let index = 0;
     const timer = setInterval(() => {
       if (index < demoText.length) {
-        setDisplayText(demoText.slice(0, index + 1))
-        index++
+        setDisplayText(demoText.slice(0, index + 1));
+        index++;
       } else {
-        clearInterval(timer)
+        clearInterval(timer);
         setTimeout(() => {
-          setDisplayText("")
-          index = 0
-        }, 2000)
+          setDisplayText("");
+          index = 0;
+        }, 2000);
       }
-    }, 100)
+    }, 100);
 
-    return () => clearInterval(timer)
-  }, [])
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="min-h-screen bg-dark-300 overflow-hidden">
@@ -106,7 +122,9 @@ const Landing = () => {
               >
                 <FileText className="w-5 h-5 text-white" />
               </motion.div>
-              <span className="text-xl font-bold text-gradient">CollabDocs</span>
+              <span className="text-xl font-bold text-gradient">
+                CollabDocs
+              </span>
             </Link>
 
             <div className="flex items-center space-x-4">
@@ -148,8 +166,9 @@ const Landing = () => {
                 </motion.span>
               </h1>
               <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-                Experience next-generation document editing with real-time collaboration, AI assistance, and a
-                futuristic interface that makes teamwork effortless.
+                Experience next-generation document editing with real-time
+                collaboration, AI assistance, and a futuristic interface that
+                makes teamwork effortless.
               </p>
             </motion.div>
 
@@ -188,12 +207,17 @@ const Landing = () => {
                     <div className="w-3 h-3 bg-green-500 rounded-full" />
                   </div>
                   <div className="text-left">
-                    <div className="font-mono text-neon-teal text-sm mb-2">// Live collaborative editor</div>
+                    <div className="font-mono text-neon-teal text-sm mb-2">
+                      // Live collaborative editor
+                    </div>
                     <div className="text-white text-lg font-medium">
                       {displayText}
                       <motion.span
                         animate={{ opacity: [1, 0, 1] }}
-                        transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}
+                        transition={{
+                          duration: 1,
+                          repeat: Number.POSITIVE_INFINITY,
+                        }}
                         className="text-neon-purple"
                       >
                         |
@@ -228,7 +252,9 @@ const Landing = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold text-white mb-4">Powerful Features</h2>
+            <h2 className="text-4xl font-bold text-white mb-4">
+              Powerful Features
+            </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
               Everything you need for modern collaborative document editing
             </p>
@@ -248,7 +274,9 @@ const Landing = () => {
                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-neon-purple to-neon-teal rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                   <feature.icon className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-2">{feature.title}</h3>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  {feature.title}
+                </h3>
                 <p className="text-gray-400">{feature.description}</p>
               </motion.div>
             ))}
@@ -265,8 +293,12 @@ const Landing = () => {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl font-bold text-white mb-4">Loved by Teams Worldwide</h2>
-            <p className="text-xl text-gray-400">See what our users are saying</p>
+            <h2 className="text-4xl font-bold text-white mb-4">
+              Loved by Teams Worldwide
+            </h2>
+            <p className="text-xl text-gray-400">
+              See what our users are saying
+            </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -281,7 +313,10 @@ const Landing = () => {
               >
                 <div className="flex items-center mb-4">
                   {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 text-neon-orange fill-current" />
+                    <Star
+                      key={i}
+                      className="w-5 h-5 text-neon-orange fill-current"
+                    />
                   ))}
                 </div>
                 <p className="text-gray-300 mb-4">"{testimonial.content}"</p>
@@ -308,9 +343,12 @@ const Landing = () => {
           >
             <div className="absolute inset-0 bg-gradient-to-r from-neon-purple/20 to-neon-teal/20" />
             <div className="relative z-10">
-              <h2 className="text-4xl font-bold text-white mb-4">Ready to Transform Your Workflow?</h2>
+              <h2 className="text-4xl font-bold text-white mb-4">
+                Ready to Transform Your Workflow?
+              </h2>
               <p className="text-xl text-gray-300 mb-8">
-                Join thousands of teams already using CollabDocs to create amazing documents together.
+                Join thousands of teams already using CollabDocs to create
+                amazing documents together.
               </p>
               <Link to="/register">
                 <AnimatedButton variant="primary" size="lg">
@@ -333,11 +371,13 @@ const Landing = () => {
             </div>
             <span className="text-xl font-bold text-gradient">CollabDocs</span>
           </div>
-          <p className="text-gray-400">© 2024 CollabDocs. All rights reserved.</p>
+          <p className="text-gray-400">
+            © 2024 CollabDocs. All rights reserved.
+          </p>
         </div>
       </footer>
     </div>
-  )
-}
+  );
+};
 
-export default Landing
+export default Landing;

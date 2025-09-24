@@ -26,7 +26,7 @@ const ShareModal = ({ isOpen, onClose, document, onDocumentUpdated }) => {
   const [inviteRole, setInviteRole] = useState("view");
   const [linkCopied, setLinkCopied] = useState(false);
   const [docIdCopied, setDocIdCopied] = useState(false);
-  const [publicAccess, setPublicAccess] = useState("restricted");
+  const [publicAccess, setPublicAccess] = useState("anyone-with-link");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -48,12 +48,6 @@ const ShareModal = ({ isOpen, onClose, document, onDocumentUpdated }) => {
   ];
 
   const accessLevels = [
-    {
-      id: "restricted",
-      name: "Restricted",
-      description: "Only people with access can view",
-      icon: Shield,
-    },
     {
       id: "anyone-with-link",
       name: "Anyone with the link",
@@ -363,7 +357,7 @@ const ShareModal = ({ isOpen, onClose, document, onDocumentUpdated }) => {
                   </div>
 
                   {/* Invite by Email */}
-                  <div>
+                  {/* <div>
                     <h3 className="text-lg font-semibold text-white mb-3">
                       Invite People
                     </h3>
@@ -411,7 +405,7 @@ const ShareModal = ({ isOpen, onClose, document, onDocumentUpdated }) => {
                         </AnimatedButton>
                       </div>
                     </form>
-                  </div>
+                  </div> */}
                 </motion.div>
               )}
 

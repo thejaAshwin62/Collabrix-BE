@@ -298,11 +298,11 @@ const AccessRequests = () => {
 
                           {/* Permission Selection */}
                           <div className="flex items-center space-x-4 mb-4">
-                            <label className="text-sm text-gray-300">
+                            <label className="text-sm font-medium text-gray-300">
                               Grant Permission:
                             </label>
                             <select
-                              className="glass border border-white/20 rounded-lg px-3 py-1 text-white text-sm focus:border-neon-purple/50 focus:outline-none"
+                              className="bg-dark-200/50 backdrop-blur-sm border border-white/20 rounded-xl px-4 py-2 text-white text-sm focus:border-neon-purple/50 focus:ring-2 focus:ring-neon-purple/20 focus:bg-dark-200/70 focus:outline-none hover:border-white/30 transition-all duration-300 cursor-pointer"
                               value={
                                 selectedPermissions[request.requestId] || "view"
                               }
@@ -313,8 +313,18 @@ const AccessRequests = () => {
                                 )
                               }
                             >
-                              <option value="view">View Only</option>
-                              <option value="edit">Edit Access</option>
+                              <option
+                                value="view"
+                                className="bg-dark-200 text-white"
+                              >
+                                View Only
+                              </option>
+                              <option
+                                value="edit"
+                                className="bg-dark-200 text-white"
+                              >
+                                Edit Access
+                              </option>
                             </select>
                           </div>
 

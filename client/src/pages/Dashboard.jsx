@@ -184,16 +184,16 @@ const Dashboard = () => {
         setShowCreateMenu(false);
       },
     },
-    {
-      label: "New Folder",
-      icon: Folder,
-      action: () => console.log("Create folder"),
-    },
-    {
-      label: "Import File",
-      icon: Plus,
-      action: () => console.log("Import file"),
-    },
+    // {
+    //   label: "New Folder",
+    //   icon: Folder,
+    //   action: () => console.log("Create folder"),
+    // },
+    // {
+    //   label: "Import File",
+    //   icon: Plus,
+    //   action: () => console.log("Import file"),
+    // },
   ];
 
   const filteredDocuments = documents.filter((doc) => {

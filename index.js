@@ -8,7 +8,7 @@ import connectDB from "./config/mongoose/database.js";
 import dotenv from "dotenv";
 dotenv.config();
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 
 // create WebSocket server on the same http server

@@ -99,15 +99,15 @@ const Sidebar = ({ refreshTrigger = 0 }) => {
       initial={{ x: -300 }}
       animate={{ x: 0, width: isCollapsed ? 80 : 280 }}
       transition={{ duration: 0.3, ease: "easeInOut" }}
-      className="fixed left-0 top-16 h-[calc(100vh-4rem)] glass-strong border-r border-white/10 z-30"
+      className="fixed left-0 top-0 h-screen glass-strong border-r border-white/10 z-30"
     >
-      <div className="flex flex-col h-full p-4">
+      <div className="flex flex-col h-full p-4 pt-20">
         {/* Toggle Button */}
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-6 w-6 h-6 glass rounded-full flex items-center justify-center border border-white/20 hover:bg-white/10 transition-all duration-300"
+          className="absolute -right-3 top-22 w-6 h-6 glass rounded-full flex items-center justify-center border border-white/20 hover:bg-white/10 transition-all duration-300"
         >
           {isCollapsed ? (
             <ChevronRight className="w-3 h-3" />

@@ -17,6 +17,7 @@ import Teams from "./pages/Teams";
 import AIAssistant from "./pages/AIAssistant";
 import Offline from "./pages/Offline";
 import PublicShare from "./pages/PublicShare";
+import ShareRedirect from "./pages/ShareRedirect";
 import SharedDocs from "./pages/SharedDocs";
 import AccessRequests from "./pages/AccessRequests";
 import JoinDocument from "./pages/JoinDocument";
@@ -64,7 +65,8 @@ function App() {
                 <Route path="/teams" element={<Teams />} />
                 <Route path="/ai" element={<AIAssistant />} />
                 <Route path="/offline" element={<Offline />} />
-                <Route path="/share/:docId" element={<PublicShare />} />
+                <Route path="/share/:docId" element={<ShareRedirect />} />
+                <Route path="/public/:docId" element={<PublicShare />} />
                 <Route path="/shared" element={<SharedDocs />} />
                 <Route path="/access-requests" element={<AccessRequests />} />
                 <Route path="/join" element={<JoinDocument />} />

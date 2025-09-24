@@ -262,7 +262,7 @@ export default function CollaborativeEditor({
       </div>
 
       {/* Tips */}
-      <div className="glass-strong border-t border-white/10 p-4">
+      {/* <div className="glass-strong border-t border-white/10 p-4">
         <p className="text-sm font-semibold text-gray-300 mb-2">
           💡 Collaboration Tips:
         </p>
@@ -276,7 +276,7 @@ export default function CollaborativeEditor({
           </li>
           <li>• The editor works offline and syncs when reconnected</li>
         </ul>
-      </div>
+      </div> */}
     </div>
   );
 }

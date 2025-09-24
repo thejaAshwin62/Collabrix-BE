@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -29,7 +29,86 @@ const JoinDocument = () => {
   const [requestMessage, setRequestMessage] = useState("");
   const [showRequestForm, setShowRequestForm] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+
+  // Check for URL parameters and pre-fill data from ShareRedirect
+  useEffect(() => {
+    const urlDocId = searchParams.get("docId");
+    const autoRequest = searchParams.get("autoRequest") === "true";
+    const urlError = searchParams.get("error");
+
+    // Pre-fill document ID from URL
+    if (urlDocId) {
+      setDocId(urlDocId);
+    }
+
+    // Handle errors passed from ShareRedirect
+    if (urlError) {
+      switch (urlError) {
+        case "not_found":
+          setError("Document not found or you don't have access to it.");
+          break;
+        case "server_error":
+          setError("Failed to check document access. Please try again.");
+          break;
+        default:
+          setError("An error occurred while accessing the document.");
+      }
+    }
+
+    // Handle document info passed from ShareRedirect
+    if (location.state?.documentInfo) {
+      setDocumentInfo(location.state.documentInfo);
+      if (autoRequest && !location.state.documentInfo.userPermission) {
+        setShowRequestForm(true);
+        setError(
+          "You don't have access to this document. Please request access below."
+        );
+      }
+    } else if (urlDocId && autoRequest) {
+      // Auto-search if document ID is provided and autoRequest is true
+      handleAutoSearch(urlDocId);
+    }
+
+    // Handle other error messages from state
+    if (location.state?.error) {
+      setError(location.state.error);
+    }
+  }, [searchParams, location.state]);
+
+  const handleAutoSearch = async (documentId) => {
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await documentAPI.getDocumentById(documentId);
+
+      if (result.success) {
+        const docData = result.data;
+        setDocumentInfo(docData);
+
+        if (docData.userPermission) {
+          setSuccess("Document found! You have access to this document.");
+        } else if (docData.canRequestAccess !== false) {
+          setShowRequestForm(true);
+          setError(
+            "You don't have access to this document. Please request access below."
+          );
+        } else {
+          setError("Document found but access cannot be requested.");
+        }
+      } else {
+        setError(result.error || "Document not found.");
+      }
+    } catch (err) {
+      setError("Failed to load document information.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSearch = async () => {
     if (!docId.trim()) {
@@ -133,262 +212,268 @@ const JoinDocument = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-dark-bg via-dark-surface to-dark-accent p-6">
-        <div className="max-w-2xl mx-auto">
-          {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
-          >
-            <div className="w-16 h-16 bg-gradient-to-r from-neon-purple to-neon-teal rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Join Collaborative Document
-            </h1>
-            <p className="text-gray-400">
-              Enter a Document ID to access or request access to a shared
-              document
-            </p>
-          </motion.div>
-
-          {/* Search Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="glass rounded-2xl p-6 mb-6"
-          >
-            <div className="space-y-4">
-              <FormInput
-                type="text"
-                placeholder="Enter Document ID (e.g., 60f7b3b3b3b3b3b3b3b3b3b3)"
-                value={docId}
-                onChange={(e) => setDocId(e.target.value)}
-                icon={FileText}
-                disabled={loading}
-                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-              />
-
-              <div className="flex gap-3">
-                <AnimatedButton
-                  onClick={handleSearch}
-                  disabled={loading || !docId.trim()}
-                  className="flex-1"
-                  variant="primary"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Searching...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="w-4 h-4 mr-2" />
-                      Search Document
-                    </>
-                  )}
-                </AnimatedButton>
-
-                {docId && (
-                  <motion.button
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    onClick={copyDocumentId}
-                    className="p-3 glass rounded-xl hover:bg-white/10 transition-colors"
-                    title="Copy Document ID"
-                  >
-                    <Copy className="w-4 h-4 text-gray-400" />
-                  </motion.button>
-                )}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Error Message */}
-          {error && (
+      <div className="h-[calc(100vh-4rem)] overflow-y-auto">
+        <div className="min-h-full bg-gradient-to-br from-dark-bg via-dark-surface to-dark-accent p-6">
+          <div className="max-w-2xl mx-auto">
+            {/* Header */}
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="glass border-l-4 border-red-500 rounded-xl p-4 mb-6"
+              className="text-center mb-8"
             >
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-red-300">{error}</p>
-                </div>
+              <div className="w-16 h-16 bg-gradient-to-r from-neon-purple to-neon-teal rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-white" />
               </div>
+              <h1 className="text-3xl font-bold text-white mb-2">
+                Join Collaborative Document
+              </h1>
+              <p className="text-gray-400">
+                Enter a Document ID to access or request access to a shared
+                document
+              </p>
             </motion.div>
-          )}
 
-          {/* Success Message */}
-          {success && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass border-l-4 border-green-500 rounded-xl p-4 mb-6"
-            >
-              <div className="flex items-start space-x-3">
-                <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-green-300">{success}</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Document Found - Access Available */}
-          {documentInfo && !showRequestForm && (
+            {/* Search Form */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
               className="glass rounded-2xl p-6 mb-6"
             >
-              <div className="flex items-start space-x-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-neon-purple to-neon-teal rounded-xl flex items-center justify-center flex-shrink-0">
-                  <FileText className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    {documentInfo.title}
-                  </h3>
-                  {documentInfo.owner && (
-                    <p className="text-gray-400 mb-3">
-                      Owner:{" "}
-                      {documentInfo.owner.name ||
-                        documentInfo.owner.username ||
-                        documentInfo.owner.email}
-                    </p>
-                  )}
-                  <div className="flex items-center space-x-4 text-sm text-gray-400 mb-4">
-                    <div className="flex items-center space-x-1">
-                      <Users className="w-4 h-4" />
-                      <span>Collaborative Document</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Clock className="w-4 h-4" />
-                      <span>
-                        Last modified:{" "}
-                        {new Date(documentInfo.updatedAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                  <AnimatedButton
-                    onClick={handleOpenDocument}
-                    variant="primary"
-                    className="w-full"
-                  >
-                    <ArrowRight className="w-4 h-4 mr-2" />
-                    Open Document
-                  </AnimatedButton>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Request Access Form */}
-          {showRequestForm && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="glass rounded-2xl p-6"
-            >
-              <div className="flex items-start space-x-4 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Lock className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    Request Access
-                  </h3>
-                  <p className="text-gray-400">
-                    This document is private. Send a request to the owner for
-                    access.
-                  </p>
-                </div>
-              </div>
-
               <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Reason for Access Request
-                  </label>
-                  <textarea
-                    value={requestMessage}
-                    onChange={(e) => setRequestMessage(e.target.value)}
-                    placeholder="Please explain why you need access to this document..."
-                    className="w-full p-3 glass rounded-xl text-white placeholder-gray-400 border border-white/10 focus:border-neon-purple/50 focus:ring-1 focus:ring-neon-purple/50 resize-none"
-                    rows={4}
-                    disabled={loading}
-                  />
-                </div>
+                <FormInput
+                  type="text"
+                  placeholder="Enter Document ID (e.g., 60f7b3b3b3b3b3b3b3b3b3b3)"
+                  value={docId}
+                  onChange={(e) => setDocId(e.target.value)}
+                  icon={FileText}
+                  disabled={loading}
+                  onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                />
 
                 <div className="flex gap-3">
                   <AnimatedButton
-                    onClick={handleRequestAccess}
-                    disabled={loading || !requestMessage.trim()}
-                    variant="primary"
+                    onClick={handleSearch}
+                    disabled={loading || !docId.trim()}
                     className="flex-1"
+                    variant="primary"
                   >
                     {loading ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                        Sending Request...
+                        Searching...
                       </>
                     ) : (
                       <>
-                        <ArrowRight className="w-4 h-4 mr-2" />
-                        Send Access Request
+                        <Search className="w-4 h-4 mr-2" />
+                        Search Document
                       </>
                     )}
                   </AnimatedButton>
-                  <AnimatedButton
-                    onClick={() => {
-                      setShowRequestForm(false);
-                      setError(null);
-                      setDocumentInfo(null);
-                    }}
-                    variant="secondary"
-                  >
-                    Cancel
-                  </AnimatedButton>
+
+                  {docId && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      onClick={copyDocumentId}
+                      className="p-3 glass rounded-xl hover:bg-white/10 transition-colors"
+                      title="Copy Document ID"
+                    >
+                      <Copy className="w-4 h-4 text-gray-400" />
+                    </motion.button>
+                  )}
                 </div>
               </div>
             </motion.div>
-          )}
 
-          {/* Help Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="glass rounded-2xl p-6 mt-8"
-          >
-            <h3 className="text-lg font-semibold text-white mb-3">
-              💡 How to find Document IDs
-            </h3>
-            <ul className="space-y-2 text-sm text-gray-400 mb-4">
-              <li>
-                • Document owners can share the ID from their document list
-              </li>
-              <li>
-                • IDs are typically 24-character strings (e.g.,
-                60f7b3b3b3b3b3b3b3b3b3b3)
-              </li>
-              <li>• You can find shared document IDs in team communications</li>
-              <li>• Document URLs contain the ID: /editor/DOCUMENT_ID</li>
-            </ul>
+            {/* Error Message */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass border-l-4 border-red-500 rounded-xl p-4 mb-6"
+              >
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-red-300">{error}</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
-            {/* Debug Auth Button */}
-            <AnimatedButton
+            {/* Success Message */}
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass border-l-4 border-green-500 rounded-xl p-4 mb-6"
+              >
+                <div className="flex items-start space-x-3">
+                  <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-green-300">{success}</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Document Found - Access Available */}
+            {documentInfo && !showRequestForm && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass rounded-2xl p-6 mb-6"
+              >
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-neon-purple to-neon-teal rounded-xl flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-semibold text-white mb-2">
+                      {documentInfo.title}
+                    </h3>
+                    {documentInfo.owner && (
+                      <p className="text-gray-400 mb-3">
+                        Owner:{" "}
+                        {documentInfo.owner.name ||
+                          documentInfo.owner.username ||
+                          documentInfo.owner.email}
+                      </p>
+                    )}
+                    <div className="flex items-center space-x-4 text-sm text-gray-400 mb-4">
+                      <div className="flex items-center space-x-1">
+                        <Users className="w-4 h-4" />
+                        <span>Collaborative Document</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Clock className="w-4 h-4" />
+                        <span>
+                          Last modified:{" "}
+                          {new Date(
+                            documentInfo.updatedAt
+                          ).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <AnimatedButton
+                      onClick={handleOpenDocument}
+                      variant="primary"
+                      className="w-full"
+                    >
+                      <ArrowRight className="w-4 h-4 mr-2" />
+                      Open Document
+                    </AnimatedButton>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Request Access Form */}
+            {showRequestForm && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass rounded-2xl p-6"
+              >
+                <div className="flex items-start space-x-4 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Lock className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-white mb-2">
+                      Request Access
+                    </h3>
+                    <p className="text-gray-400">
+                      This document is private. Send a request to the owner for
+                      access.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Reason for Access Request
+                    </label>
+                    <textarea
+                      value={requestMessage}
+                      onChange={(e) => setRequestMessage(e.target.value)}
+                      placeholder="Please explain why you need access to this document..."
+                      className="w-full p-4 bg-dark-200/50 backdrop-blur-sm rounded-xl text-white placeholder-gray-400 border border-white/20 focus:border-neon-purple/50 focus:ring-2 focus:ring-neon-purple/20 focus:bg-dark-200/70 resize-none transition-all duration-300 hover:border-white/30"
+                      rows={4}
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="flex gap-3">
+                    <AnimatedButton
+                      onClick={handleRequestAccess}
+                      disabled={loading || !requestMessage.trim()}
+                      variant="primary"
+                      className="flex-1"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                          Sending Request...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowRight className="w-4 h-4 mr-2" />
+                          Send Access Request
+                        </>
+                      )}
+                    </AnimatedButton>
+                    <AnimatedButton
+                      onClick={() => {
+                        setShowRequestForm(false);
+                        setError(null);
+                        setDocumentInfo(null);
+                      }}
+                      variant="secondary"
+                    >
+                      Cancel
+                    </AnimatedButton>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Help Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="glass rounded-2xl p-6 mt-8"
+            >
+              <h3 className="text-lg font-semibold text-white mb-3">
+                💡 How to find Document IDs
+              </h3>
+              <ul className="space-y-2 text-sm text-gray-400 mb-4">
+                <li>
+                  • Document owners can share the ID from their document list
+                </li>
+                <li>
+                  • IDs are typically 24-character strings (e.g.,
+                  60f7b3b3b3b3b3b3b3b3b3b3)
+                </li>
+                <li>
+                  • You can find shared document IDs in team communications
+                </li>
+                <li>• Document URLs contain the ID: /editor/DOCUMENT_ID</li>
+              </ul>
+
+              {/* Debug Auth Button */}
+              {/* <AnimatedButton
               onClick={testAuth}
               variant="secondary"
               className="w-full"
             >
               🔧 Test Authentication (Debug)
-            </AnimatedButton>
-          </motion.div>
+            </AnimatedButton> */}
+            </motion.div>
+          </div>
         </div>
       </div>
     </Layout>

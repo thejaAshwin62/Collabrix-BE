@@ -50,6 +50,10 @@ const Editor = () => {
     collaborators: [], // Will be populated from owner + permissions
   });
 
+  // Real-time presence tracking
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
+  const [userPresence, setUserPresence] = useState(new Map());
+
   // Enhanced user object for collaborative editor
   const collaborativeUser = {
     ...user,
@@ -76,6 +80,9 @@ const Editor = () => {
     // Add owner as first collaborator
     if (docData.owner) {
       const avatar = generateAvatar(docData.owner.name, docData.owner._id);
+      const isOnline = onlineUsers.has(docData.owner._id);
+      const presence = userPresence.get(docData.owner._id);
+
       collaborators.push({
         id: docData.owner._id,
         name: docData.owner.name || docData.owner.username || "Owner",
@@ -83,10 +90,12 @@ const Editor = () => {
         avatar: docData.owner.avatar || avatar.initials,
         color: avatar.color,
         role: "owner",
-        isActive: false, // Will be updated by WebSocket
-        cursor: null,
-        selection: null,
-        isTyping: false,
+        isActive: isOnline,
+        isOnline: isOnline,
+        cursor: presence?.cursor || null,
+        selection: presence?.selection || null,
+        isTyping: presence?.isTyping || false,
+        lastSeen: presence?.lastSeen || null,
       });
     }
 
@@ -98,6 +107,9 @@ const Editor = () => {
             permission.user.name,
             permission.user._id
           );
+          const isOnline = onlineUsers.has(permission.user._id);
+          const presence = userPresence.get(permission.user._id);
+
           collaborators.push({
             id: permission.user._id,
             name: permission.user.name || permission.user.username || "User",
@@ -105,10 +117,12 @@ const Editor = () => {
             avatar: permission.user.avatar || avatar.initials,
             color: avatar.color,
             role: permission.permission, // 'view' or 'edit'
-            isActive: false, // Will be updated by WebSocket
-            cursor: null,
-            selection: null,
-            isTyping: false,
+            isActive: isOnline,
+            isOnline: isOnline,
+            cursor: presence?.cursor || null,
+            selection: presence?.selection || null,
+            isTyping: presence?.isTyping || false,
+            lastSeen: presence?.lastSeen || null,
           });
         }
       });
@@ -162,26 +176,165 @@ const Editor = () => {
     };
 
     loadDocument();
-  }, [docId]);
+  }, [docId, onlineUsers, userPresence]); // Re-run when presence data changes
 
-  // Simulate typing effect
+  // Real-time presence tracking via WebSocket
   useEffect(() => {
-    const interval = setInterval(() => {
-      setDocument((prev) => ({
-        ...prev,
-        collaborators: prev.collaborators.map((collab) => ({
-          ...collab,
-          isTyping: Math.random() > 0.7,
-          cursor: {
-            x: Math.random() * 800 + 100,
-            y: Math.random() * 600 + 100,
-          },
-        })),
-      }));
-    }, 3000);
+    if (!docId || docId === "new" || !token) return;
 
-    return () => clearInterval(interval);
-  }, []);
+    let ws;
+    let heartbeatInterval;
+    let reconnectTimeout;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    const reconnectDelay = 3000; // 3 seconds
+
+    const connectWebSocket = () => {
+      try {
+        const wsUrl = `ws://localhost:5000/${docId}?token=${encodeURIComponent(
+          token
+        )}`;
+        console.log("Connecting to WebSocket:", wsUrl);
+
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          console.log("WebSocket connected for document:", docId);
+          setIsOnline(true);
+          reconnectAttempts = 0; // Reset reconnection attempts on successful connection
+
+          // Send presence information
+          const presenceData = {
+            type: "presence",
+            userId: user?.id,
+            userName: user?.name || "Anonymous",
+            userEmail: user?.email,
+            timestamp: Date.now(),
+          };
+
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify(presenceData));
+          }
+
+          // Set up heartbeat to maintain connection
+          heartbeatInterval = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ type: "ping", timestamp: Date.now() }));
+            }
+          }, 30000);
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            // Handle both text and binary messages from Yjs
+            if (typeof event.data === "string") {
+              const data = JSON.parse(event.data);
+
+              if (data.type === "presence") {
+                // Update online users list
+                setOnlineUsers((prev) => {
+                  const newSet = new Set(prev);
+                  if (data.userId && data.userId !== user?.id) {
+                    newSet.add(data.userId);
+                  }
+                  return newSet;
+                });
+
+                // Update user presence data
+                setUserPresence((prev) => {
+                  const newMap = new Map(prev);
+                  if (data.userId) {
+                    newMap.set(data.userId, {
+                      userName: data.userName,
+                      userEmail: data.userEmail,
+                      isTyping: data.isTyping || false,
+                      cursor: data.cursor || null,
+                      selection: data.selection || null,
+                      lastSeen: data.timestamp || Date.now(),
+                    });
+                  }
+                  return newMap;
+                });
+              } else if (data.type === "user-disconnected") {
+                // Remove user from online list
+                setOnlineUsers((prev) => {
+                  const newSet = new Set(prev);
+                  newSet.delete(data.userId);
+                  return newSet;
+                });
+              }
+            }
+            // Let Yjs handle binary messages for document sync
+          } catch (error) {
+            console.warn("Failed to parse WebSocket message:", error);
+          }
+        };
+
+        ws.onclose = (event) => {
+          console.log("WebSocket disconnected:", event.code, event.reason);
+          setIsOnline(false);
+
+          // Clear online users when connection is lost
+          setOnlineUsers(new Set());
+          setUserPresence(new Map());
+
+          if (heartbeatInterval) {
+            clearInterval(heartbeatInterval);
+          }
+
+          // Attempt to reconnect after delay if not a clean close and haven't exceeded max attempts
+          if (event.code !== 1000 && reconnectAttempts < maxReconnectAttempts) {
+            reconnectAttempts++;
+            console.log(
+              `Attempting to reconnect... (${reconnectAttempts}/${maxReconnectAttempts})`
+            );
+            reconnectTimeout = setTimeout(() => {
+              connectWebSocket();
+            }, reconnectDelay * reconnectAttempts); // Exponential backoff
+          } else if (reconnectAttempts >= maxReconnectAttempts) {
+            console.warn(
+              "Max reconnection attempts reached. WebSocket connection failed."
+            );
+            setIsOnline(false);
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error("WebSocket error:", error);
+          setIsOnline(false);
+        };
+      } catch (error) {
+        console.error("Failed to connect to WebSocket:", error);
+        setIsOnline(false);
+
+        // Also attempt reconnection on connection creation failure
+        if (reconnectAttempts < maxReconnectAttempts) {
+          reconnectAttempts++;
+          console.log(
+            `Connection creation failed, retrying... (${reconnectAttempts}/${maxReconnectAttempts})`
+          );
+          reconnectTimeout = setTimeout(() => {
+            connectWebSocket();
+          }, reconnectDelay * reconnectAttempts);
+        }
+      }
+    };
+
+    connectWebSocket();
+
+    // Cleanup function
+    return () => {
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      if (ws) {
+        ws.close(1000, "Component unmounting");
+      }
+    };
+  }, [docId, token, user?.id, user?.name, user?.email]);
 
   // Auto-save simulation
   useEffect(() => {
@@ -223,7 +376,7 @@ const Editor = () => {
       <div
         className={`${
           isFullscreen ? "fixed inset-0 z-50 bg-dark-300" : ""
-        } flex h-screen`}
+        } flex h-[calc(100vh-4rem)]`}
       >
         {/* Main Editor */}
         <div className="flex-1 flex flex-col">
@@ -437,6 +590,26 @@ const Editor = () => {
                               }`}
                             />
 
+                            {/* Online status indicator */}
+                            {collaborator.isOnline && (
+                              <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                exit={{ scale: 0 }}
+                                className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white shadow-sm"
+                                title={`${collaborator.name} is online`}
+                              >
+                                <motion.div
+                                  animate={{ opacity: [1, 0.3, 1] }}
+                                  transition={{
+                                    duration: 2,
+                                    repeat: Number.POSITIVE_INFINITY,
+                                  }}
+                                  className="w-full h-full bg-green-400 rounded-full"
+                                />
+                              </motion.div>
+                            )}
+
                             {collaborator.isTyping && (
                               <motion.div
                                 animate={{ scale: [1, 1.2, 1] }}
@@ -444,17 +617,42 @@ const Editor = () => {
                                   duration: 1,
                                   repeat: Number.POSITIVE_INFINITY,
                                 }}
-                                className="absolute -bottom-1 -left-1 w-3 h-3 bg-green-400 rounded-full"
+                                className="absolute -bottom-1 -left-1 w-3 h-3 bg-orange-400 rounded-full border border-white"
+                                title={`${collaborator.name} is typing...`}
                               />
                             )}
 
                             {/* Tooltip */}
-                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black/80 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                              {collaborator.name}
-                              <br />
-                              <span className="text-gray-300 capitalize">
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-black/90 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 border border-white/20">
+                              <div className="font-medium">
+                                {collaborator.name}
+                              </div>
+                              <div className="text-gray-300 capitalize">
                                 {collaborator.role}
-                              </span>
+                              </div>
+                              <div
+                                className={`flex items-center space-x-1 mt-1 ${
+                                  collaborator.isOnline
+                                    ? "text-green-400"
+                                    : "text-gray-500"
+                                }`}
+                              >
+                                <div
+                                  className={`w-2 h-2 rounded-full ${
+                                    collaborator.isOnline
+                                      ? "bg-green-400"
+                                      : "bg-gray-500"
+                                  }`}
+                                />
+                                <span>
+                                  {collaborator.isOnline ? "Online" : "Offline"}
+                                </span>
+                              </div>
+                              {collaborator.isTyping && (
+                                <div className="text-orange-400 mt-1">
+                                  Currently typing...
+                                </div>
+                              )}
                             </div>
                           </motion.div>
                         ))}

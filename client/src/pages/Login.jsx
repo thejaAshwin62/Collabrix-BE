@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Mail, Lock, ArrowRight, AlertCircle, CheckCircle } from "lucide-react";
@@ -19,7 +19,15 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loginStatus, setLoginStatus] = useState(null); // 'success', 'error', null
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+
+  // Check for redirect URL in localStorage or location state
+  const getRedirectUrl = () => {
+    const redirectFromStorage = localStorage.getItem("redirectAfterLogin");
+    const redirectFromState = location.state?.redirectUrl;
+    return redirectFromStorage || redirectFromState || "/dashboard";
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -74,9 +82,14 @@ const Login = () => {
       if (result.success) {
         setLoginStatus("success");
         toast.success("Login successful! Redirecting...", { id: loginToast });
+
+        // Get redirect URL and clear it from storage
+        const redirectUrl = getRedirectUrl();
+        localStorage.removeItem("redirectAfterLogin");
+
         // Delay navigation to show success animation
         setTimeout(() => {
-          navigate("/dashboard");
+          navigate(redirectUrl, { replace: true });
         }, 1000);
       } else {
         setLoginStatus("error");
@@ -126,6 +139,21 @@ const Login = () => {
         title="Welcome Back"
         subtitle="Sign in to your CollabDocs account"
       >
+        {/* Share Link Redirect Message */}
+        <AnimatePresence>
+          {location.state?.message && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex items-center space-x-2 p-4 mb-6 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-400"
+            >
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm">{location.state.message}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <motion.form
           onSubmit={handleSubmit}
           animate={loginStatus === "error" ? { x: [-10, 10, -10, 10, 0] } : {}}

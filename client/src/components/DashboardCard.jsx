@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { MoreVertical, Star, Users, Clock } from "lucide-react";
+import { MoreVertical, Star, Users, Clock, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 // Helper function to format date
@@ -57,6 +57,27 @@ const DashboardCard = ({
     onMenu?.(position, documentData || { title, description, type });
   };
 
+  const handleCopyDocumentId = (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const documentId = documentData?.id || documentData?._id;
+    if (documentId) {
+      navigator.clipboard
+        .writeText(documentId)
+        .then(() => {
+          toast.success(`Document ID copied to clipboard!`, {
+            description: `ID: ${documentId.slice(0, 8)}...`,
+          });
+        })
+        .catch(() => {
+          toast.error("Failed to copy document ID");
+        });
+    } else {
+      toast.error("Document ID not available");
+    }
+  };
+
   return (
     <motion.div
       whileHover={{ scale: 1.02, y: -5 }}
@@ -92,6 +113,16 @@ const DashboardCard = ({
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
+              onClick={handleCopyDocumentId}
+              className="p-2 rounded-lg backdrop-blur-sm bg-white/5 border border-white/10 text-gray-300 hover:text-neon-teal hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer pointer-events-auto"
+              title="Copy Document ID"
+            >
+              <Copy className="w-4 h-4" />
+            </motion.button>
+
+            {/* <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
@@ -105,9 +136,10 @@ const DashboardCard = ({
                   ? "text-neon-orange"
                   : "text-gray-300 hover:text-neon-orange"
               }`}
+              title={starred ? "Unstar document" : "Star document"}
             >
               <Star className={`w-4 h-4 ${starred ? "fill-current" : ""}`} />
-            </motion.button>
+            </motion.button> */}
 
             <motion.button
               whileHover={{ scale: 1.1 }}
@@ -119,6 +151,7 @@ const DashboardCard = ({
                 handleMenuClick(e);
               }}
               className="p-2 rounded-lg backdrop-blur-sm bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer pointer-events-auto"
+              title="More options"
             >
               <MoreVertical className="w-4 h-4" />
             </motion.button>
