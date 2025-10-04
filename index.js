@@ -10,7 +10,7 @@ dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
-
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 // create WebSocket server on the same http server
 const wss = new WebSocketServer({ server });
 
@@ -41,7 +41,7 @@ wss.on("connection", async (ws, req) => {
 });
 
 server.listen(PORT, async () => {
-  console.log(`HTTP + WS server running on http://localhost:${PORT}`);
+  console.log(`HTTP + WS server running on ${BASE_URL}`);
   try {
     await connectDB();
     console.log("✅ MongoDB Connected Successfully");
